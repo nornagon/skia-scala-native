@@ -3,8 +3,9 @@ scalaVersion := "2.11.11"
 enablePlugins(ScalaNativePlugin)
 
 lazy val skiaCompile = taskKey[File]("Build Skia with ninja")
+lazy val glfwCompile = taskKey[File]("Build GLFW with cmake")
 
-target in skiaCompile := target.value / "native"
+//target in skiaCompile := target.value / "native"
 
 skiaCompile := {
   val log = streams.value.log
@@ -38,6 +39,27 @@ skiaCompile := {
   lib
 }
 
+glfwCompile := {
+  val log = streams.value.log
+  val glfwDir = baseDirectory.value / "third_party" / "glfw"
+  val buildDir = (target.value / "glfw-build")
+  IO.createDirectory(buildDir)
+  Process(Seq(
+    "cmake",
+    s"-DCMAKE_INSTALL_PREFIX:PATH=${buildDir.getAbsolutePath}",
+    "-DCMAKE_BUILD_TYPE=Release",
+    glfwDir.getAbsolutePath
+  ), buildDir) ! log
+  Process(Seq("make", "glfw"), buildDir) ! log
+  buildDir / "src"
+}
+
 envVars in run += ("DYLD_LIBRARY_PATH", skiaCompile.value.getAbsolutePath)
 nativeLinkingOptions += s"-L${skiaCompile.value}"
-nativeLinkingOptions ++= Seq("-framework", "OpenGL")
+nativeLinkingOptions += s"-L${glfwCompile.value}"
+nativeLinkingOptions ++= Seq(
+  "-framework", "OpenGL",
+  "-framework", "Cocoa",
+  "-framework", "CoreVideo",
+  "-framework", "IOKit"
+)
