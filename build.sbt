@@ -40,3 +40,4 @@ skiaCompile := {
 
 envVars in run += ("DYLD_LIBRARY_PATH", skiaCompile.value.getAbsolutePath)
 nativeLinkingOptions += s"-L${skiaCompile.value}"
+nativeLinkingOptions ++= Seq("-framework", "OpenGL")
